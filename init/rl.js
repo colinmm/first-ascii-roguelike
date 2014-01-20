@@ -27,14 +27,15 @@ function create() {
 
 	// Initialize screen
 	screen = [];
-	for (var y = 0; y < ROWS; y++) {
+	for(var y = 0; y < ROWS; y++) {
 		var newRow = [];
 		screen.push(newRow);
-		for (var x = 0; x < COLS; x++)
+		for(var x = 0; x < COLS; x++)
 			newRow.push(initCell('', x, y));
 	}
 	drawMap();
 
+	// Initialize actors
 	initActors();
 	drawActors();
 }
@@ -46,24 +47,38 @@ function initCell(chr, x, y) {
 }
 
 function onKeyUp(event) {
+
+	// Draw map to overwrite previous actor's positions
+	drawMap();
+
+	// Act on player input
+	var acted = false;
 	switch (event.keyCode) {
-		case Keyboard.LEFT:
-
-		case Keyboard.RIGHT:
-
-		case Keyboard.UP:
-
-		case Keyboard.DOWN:
+		case Phaser.Keyboard.LEFT:
+			acted = moveTo(player, {x:-1, y:0});
+			break;
+		case Phaser.Keyboard.RIGHT:
+			acted = moveTo(player,{x:1, y:0});
+			break;
+		case Phaser.Keyboard.UP:
+			acted = moveTo(player, {x:0, y:-1});
+			break;
+		case Phaser.Keyboard.DOWN:
+			acted = moveTo(player, {x:0, y:1});
+			break;
 	}
+
+	// Draw actors in new positions
+	drawActors();
 }
 
 function initMap() {
 	// Create a new random map
 	map = [];
-	for (var y = 0; y < ROWS; y++) {
+	for(var y = 0; y < ROWS; y++) {
 	    var newRow = [];
-	    for (var x = 0; x < COLS; x++) {
-	        if (Math.random() > 0.8)
+	    for(var x = 0; x < COLS; x++) {
+	        if(Math.random() > 0.8)
 	            newRow.push('#');
 	        else
 	            newRow.push('.');
@@ -73,8 +88,8 @@ function initMap() {
 }
 
 function drawMap() {
-	for (var y = 0; y < ROWS; y++)
-		for (var x = 0; x < COLS; x++)
+	for(var y = 0; y < ROWS; y++)
+		for(var x = 0; x < COLS; x++)
 			screen[y][x].content = map[y][x];
 }
 
@@ -95,14 +110,14 @@ function initActors() {
 	// Create Actors at random locations
 	actorList = [];
 	actorMap = {};
-	for (var e = 0; e < ACTORS; e++) {
+	for(var e = 0; e < ACTORS; e++) {
 		// Creaete a new actor
 		var actor = { x:0, y:0, hp:e == 0?3:1 };
 		do {
 			// Pick a random position that is both a floor and not occupied
 			actor.y = randomInt(ROWS);
 			actor.x = randomInt(COLS);
-		} while (map[actor.y][actor.x] == '#' || actorMap[actor.y + "_" + actor.x] != null);
+		} while(map[actor.y][actor.x] == '#' || actorMap[actor.y + "_" + actor.x] != null);
 
 		// Add references to the actor to the actors list & map
 		actorMap[actor.y + "_" + actor.x] = actor;
@@ -115,8 +130,8 @@ function initActors() {
 }
 
 function drawActors() {
-	for (var a in actorList) {
-		if (actorList[a].hp > 0)
+	for(var a in actorList) {
+		if(actorList[a].hp > 0)
 			screen[actorList[a].y][actorList[a].x].content = a == 0?'' + player.hp:'e';
 	}
 }
@@ -128,3 +143,49 @@ function canGo(actor, dir) {
 		actor.y + dir.y <= ROWS-1 &&
 		map[actor.y + dir.y][actor.x + dir.x] == '.';
 }
+
+function moveTo(actor, dir) {
+	
+	// Check if an actor can move in a given direction
+	if(!canGo(actor, dir))
+		return false;
+
+	// Move an actor to new location
+	var newKey = (actor.y + dir.y) + '_' + (actor.x + dir.x);
+	// If the destination tile has an actor in it
+	if(actorMap[newKey] != null) {
+		// Decrement hp of the actor at the destination
+		var victim = actorMap[newKey];
+		victim.hp--;
+
+		// If actor is dead remove its reference
+		if(victim.hp == 0) {
+			actorMap[newKey] = null;
+			actorList[actorList.indexOf(victim)] = null;
+
+			if(victim != player) {
+				livingEnemies--;
+
+				if(livingEnemies == 0) {
+					// Victory message
+					var victory = game.add.text(game.world.centerX, game.world.centerY, 'Victory!\nCtrl+r to restart', { fill : '#2e2', align: "center" });
+					victory.anchore.setTo(0.5,0.5);
+				}
+			}
+		}
+
+	} else {
+		// Remove reference to actor's old position
+		actorMap[actor.y + '_' + actor.x] = null;
+
+		// Update position
+		actor.y += dir.y;
+		actor.x += dir.x;
+
+		// Add reference to the actor's new position
+		actorMap[actor.y + '_' + actor.x] = actor;
+	}
+
+	return true;
+}
+
