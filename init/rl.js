@@ -38,6 +38,8 @@ function create() {
 	// Initialize actors
 	initActors();
 	drawActors();
+
+	// console.log(actorList);
 }
 
 function initCell(chr, x, y) {
@@ -66,7 +68,23 @@ function onKeyUp(event) {
 		case Phaser.Keyboard.DOWN:
 			acted = moveTo(player, {x:0, y:1});
 			break;
+		case Phaser.Keyboard.SPACEBAR:
+			acted = moveTo(player, {x:0, y:0});
+			break;
 	}
+
+	// Movement turns
+	if(acted)
+		for(var enemy in actorList) {
+			
+			// Skip the player
+			if(enemy == 0)
+				continue;
+
+			var e = actorList[enemy];
+			if(e != null)
+				aiAct(e);
+		}
 
 	// Draw actors in new positions
 	drawActors();
@@ -111,8 +129,11 @@ function initActors() {
 	actorList = [];
 	actorMap = {};
 	for(var e = 0; e < ACTORS; e++) {
-		// Creaete a new actor
-		var actor = { x:0, y:0, hp:e == 0?3:1 };
+
+		// Create a new actor with a position and hp
+		var actor = { x:0, 
+			y:0, 
+			hp:e == 0?5:1 };
 		do {
 			// Pick a random position that is both a floor and not occupied
 			actor.y = randomInt(ROWS);
@@ -131,7 +152,7 @@ function initActors() {
 
 function drawActors() {
 	for(var a in actorList) {
-		if(actorList[a].hp > 0)
+		if (actorList[a] != null && actorList[a].hp > 0)
 			screen[actorList[a].y][actorList[a].x].content = a == 0?'' + player.hp:'e';
 	}
 }
@@ -169,7 +190,7 @@ function moveTo(actor, dir) {
 				if(livingEnemies == 0) {
 					// Victory message
 					var victory = game.add.text(game.world.centerX, game.world.centerY, 'Victory!\nCtrl+r to restart', { fill : '#2e2', align: "center" });
-					victory.anchore.setTo(0.5,0.5);
+					victory.anchor.setTo(0.5,0.5);
 				}
 			}
 		}
@@ -189,3 +210,38 @@ function moveTo(actor, dir) {
 	return true;
 }
 
+function aiAct(actor) {
+	var directions = [{ x: -1, y:0 }, { x:1, y:0 }, { x:0, y: -1 }, { x:0, y:1 }];
+	var dx = player.x - actor.x;
+	var dy = player.y - actor.y;
+
+	// If player is far away, walk randomly
+	if(Math.abs(dx) + Math.abs(dy) > 6)
+		// Walk in random directions until successful
+		while(!moveTo(actor, directions[randomInt(directions.length)])) {};
+
+	// Otherwise walk towards player
+	if(Math.abs(dx) > Math.abs(dy)) {
+		if(dx < 0) {
+			// Left
+			moveTo(actor, directions[0]);
+		} else {
+			// Right
+			moveTo(actor, directions[1]);
+		}
+	} else {
+		if(dy < 0) {
+			// Up
+			moveTo(actor, directions[2]);
+		} else {
+			// Down
+			moveTo(actor, directions[3]);
+		}
+	}
+
+	if(player.hp < 1) {
+		// Player dies, game over man
+		var gameOver = game.add.text(game.world.centerX, game.world.centerY, 'Game Over\nCtrl+r to restart', { fill : '#e22', align: "center" } );
+		gameOver.anchor.setTo(0.5,0.5);
+	}
+}
