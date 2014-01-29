@@ -1,13 +1,13 @@
 // Font size
-var FONT = 32;
+var FONT = 16;
 
 // The ascii display 
 var screen;
 
 // Map dimensions
 var map;
-var ROWS = 10;
-var COLS = 15;
+var ROWS = 20;
+var COLS = 30;
 
 // Actors per level (including player)
 var ACTORS = 10;
@@ -43,6 +43,7 @@ function create() {
 }
 
 function initCell(chr, x, y) {
+
 	// Add a single cell in a given position to the ascii display
 	var style = { font: FONT + "px monospace", fill:"#fff"};
 	return game.add.text(FONT*0.6*x, FONT*y, chr, style);
@@ -69,7 +70,7 @@ function onKeyUp(event) {
 			acted = moveTo(player, {x:0, y:1});
 			break;
 		case Phaser.Keyboard.SPACEBAR:
-			acted = moveTo(player, {x:0, y:0});
+			acted = true;
 			break;
 	}
 
@@ -91,6 +92,7 @@ function onKeyUp(event) {
 }
 
 function initMap() {
+	
 	// Create a new random map
 	map = [];
 	for(var y = 0; y < ROWS; y++) {
@@ -173,11 +175,14 @@ function moveTo(actor, dir) {
 
 	// Move an actor to new location
 	var newKey = (actor.y + dir.y) + '_' + (actor.x + dir.x);
+
 	// If the destination tile has an actor in it
 	if(actorMap[newKey] != null) {
+
 		// Decrement hp of the actor at the destination
 		var victim = actorMap[newKey];
 		victim.hp--;
+		document.getElementById('text_log').innerHTML = 'hit!';
 
 		// If actor is dead remove its reference
 		if(victim.hp == 0) {
@@ -188,6 +193,7 @@ function moveTo(actor, dir) {
 				livingEnemies--;
 
 				if(livingEnemies == 0) {
+
 					// Victory message
 					var victory = game.add.text(game.world.centerX, game.world.centerY, 'Victory!\nCtrl+r to restart', { fill : '#2e2', align: "center" });
 					victory.anchor.setTo(0.5,0.5);
@@ -217,6 +223,7 @@ function aiAct(actor) {
 
 	// If player is far away, walk randomly
 	if(Math.abs(dx) + Math.abs(dy) > 6)
+
 		// Walk in random directions until successful
 		while(!moveTo(actor, directions[randomInt(directions.length)])) {};
 
